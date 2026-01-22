@@ -166,7 +166,7 @@ class TestFormatterRegistry:
             def output_filename(self) -> str:
                 return "test.md"
 
-            def format(self, data):
+            def format(self, parsed_data):
                 return ""
 
         formatter = MockFormatter()
