@@ -1,11 +1,14 @@
 """GitLab data extraction via glab CLI."""
 
 import json
+import logging
 import subprocess
 from typing import Any
 
 from .constants import DEFAULT_PAGE_SIZE
 from .validation import validate_gitlab_name
+
+logger = logging.getLogger(__name__)
 
 
 class GitLabExtractor:
@@ -65,7 +68,9 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, list) else []
-        except Exception:
+        except Exception as e:
+            endpoint = args[0] if args else "unknown"
+            logger.warning("Failed to extract list for %s: %s", endpoint, e)
             return []
 
     def _safe_extract_dict(self, *args: str) -> dict[str, Any]:
@@ -76,7 +81,9 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, dict) else {}
-        except Exception:
+        except Exception as e:
+            endpoint = args[0] if args else "unknown"
+            logger.warning("Failed to extract dict for %s: %s", endpoint, e)
             return {}
 
     def extract(self, username: str) -> dict[str, Any]:
@@ -196,7 +203,8 @@ class GitLabExtractor:
                 if user_id:
                     return self._safe_extract_list("api", f"/users/{user_id}/gpg_keys")
             return []
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to extract GPG keys: %s", e)
             return []
 
     def _get_memberships(self, username: str) -> list[dict[str, Any]]:
@@ -210,7 +218,8 @@ class GitLabExtractor:
                         "api", f"/users/{user_id}/memberships"
                     )
             return []
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to extract memberships: %s", e)
             return []
 
     def _get_contributed_projects(self, username: str) -> list[dict[str, Any]]:
@@ -275,8 +284,10 @@ class GitLabExtractor:
                 if group_data["projects"]:
                     contributions[group] = group_data
 
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(
+                    "Failed to process group %s: %s", group, e
+                )
 
         return contributions
 
