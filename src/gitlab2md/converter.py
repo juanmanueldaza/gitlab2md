@@ -7,7 +7,7 @@ SOLID Principles applied:
   not concrete implementations
 """
 
-import sys
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -83,11 +83,7 @@ class GitLabToMarkdownConverter:
             try:
                 parsed[parser.section_key] = parser.parse(raw_data)
             except Exception as e:
-                # Log warning but continue with other sections
-                print(
-                    f"Warning: Parser '{parser.section_key}' failed: {e}",
-                    file=sys.stderr,
-                )
+                logging.warning("Parser '%s' failed: %s", parser.section_key, e)
                 parsed[parser.section_key] = None
 
         return parsed
@@ -114,11 +110,7 @@ class GitLabToMarkdownConverter:
                     path = self._writer.write(formatter.output_filename, markdown)
                     created_files.append(path)
             except Exception as e:
-                # Log warning but continue with other sections
-                print(
-                    f"Warning: Formatter '{formatter.section_key}' failed: {e}",
-                    file=sys.stderr,
-                )
+                logging.warning("Formatter '%s' failed: %s", formatter.section_key, e)
 
         return created_files
 
