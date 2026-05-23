@@ -202,6 +202,24 @@ class TestFormatterSecurity:
         result = formatter._escape_md("text | with | pipes")
         assert result == "text \\| with \\| pipes"
 
+    def test_escape_md_prevents_formatting_injection(self, formatter):
+        """Ensure markdown formatting characters are escaped."""
+        result = formatter._escape_md("*bold* _italic_ `code`")
+        assert result == "\\*bold\\* \\_italic\\_ \\`code\\`"
+
+    def test_escape_md_prevents_html_injection(self, formatter):
+        """Ensure HTML tag characters are escaped."""
+        result = formatter._escape_md("<script>alert('xss')</script>")
+        assert "\\<" in result
+        assert "\\>" in result
+        assert "<script>" not in result
+
+    def test_escape_md_handles_heading_chars(self, formatter):
+        """Ensure heading characters are escaped."""
+        result = formatter._escape_md("# Heading\n## Subheading")
+        assert "\\#" in result
+        assert "\n#" not in result  # no unescaped # at start of lines
+
     def test_truncate_prevents_large_output(self, formatter):
         """Ensure truncate limits output size."""
         large_text = "A" * 100000

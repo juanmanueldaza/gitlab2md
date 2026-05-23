@@ -26,10 +26,29 @@ class BaseFormatter:
         """Escape markdown special characters in user-provided text.
 
         Escapes characters that could break markdown table rendering
-        or cause unintended formatting.
+        or cause unintended formatting, based on GFM spec.
         """
         if not text:
             return ""
+        # Must escape backslash first to prevent double-escaping
+        text = text.replace("\\", "\\\\")
+        text = text.replace("`", "\\`")
+        text = text.replace("*", "\\*")
+        text = text.replace("_", "\\_")
+        text = text.replace("{", "\\{")
+        text = text.replace("}", "\\}")
+        text = text.replace("[", "\\[")
+        text = text.replace("]", "\\]")
+        text = text.replace("(", "\\(")
+        text = text.replace(")", "\\)")
+        text = text.replace("#", "\\#")
+        text = text.replace("+", "\\+")
+        text = text.replace("-", "\\-")
+        text = text.replace(".", "\\.")
+        text = text.replace("!", "\\!")
+        text = text.replace("<", "\\<")
+        text = text.replace(">", "\\>")
+        text = text.replace("~", "\\~")
         # Escape pipe for tables and newlines for inline text
         return text.replace("|", "\\|").replace("\n", " ").replace("\r", "")
 

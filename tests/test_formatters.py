@@ -48,6 +48,16 @@ class TestBaseFormatter:
         result = formatter._escape_md("text | with | pipes")
         assert result == "text \\| with \\| pipes"
 
+    def test_escape_md_special_chars(self, formatter):
+        """Test escaping GFM special characters."""
+        result = formatter._escape_md("* _ ` # [ ] ( ) { } < > ~ + - . !")
+        assert result == "\\* \\_ \\` \\# \\[ \\] \\( \\) \\{ \\} \\< \\> \\~ \\+ \\- \\. \\!"
+
+    def test_escape_md_backslash_first(self, formatter):
+        """Test backslash is escaped first to prevent double-escaping."""
+        result = formatter._escape_md("\\*")
+        assert result == "\\\\\\*"
+
     def test_escape_md_none(self, formatter):
         """Test escaping None returns empty string."""
         assert formatter._escape_md(None) == ""
