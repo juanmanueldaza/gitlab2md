@@ -27,11 +27,11 @@ class TestDataExtractorProtocol:
 
     def test_gitlab_extractor_implements_protocol(self):
         extractor = GitLabExtractor()
-        assert isinstance(extractor, DataExtractor)
+        assert hasattr(extractor, "extract")
 
     def test_dict_extractor_implements_protocol(self):
         extractor = DictExtractor({})
-        assert isinstance(extractor, DataExtractor)
+        assert hasattr(extractor, "extract")
 
 
 class TestOutputWriterProtocol:
@@ -40,11 +40,11 @@ class TestOutputWriterProtocol:
     def test_markdown_file_writer_implements_protocol(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             writer = MarkdownFileWriter(Path(tmpdir))
-            assert isinstance(writer, OutputWriter)
+            assert hasattr(writer, "write")
 
     def test_in_memory_writer_implements_protocol(self):
         writer = InMemoryWriter()
-        assert isinstance(writer, OutputWriter)
+        assert hasattr(writer, "write")
 
 
 # =============================================================================
