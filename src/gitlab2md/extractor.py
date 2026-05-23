@@ -187,7 +187,7 @@ class GitLabExtractor:
     def _get_snippets(self, username: str) -> list[dict[str, Any]]:
         """Get user's snippets."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -202,7 +202,7 @@ class GitLabExtractor:
     def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's SSH keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -251,7 +251,7 @@ class GitLabExtractor:
         contributions: dict[str, Any] = {}
 
         # Get user's full name for commit matching
-        profile = self._safe_extract_list("api", f"/users?username={username}")
+        profile = self._get_profile(username)
         user_name = ""
         if profile:
             user_name = profile[0].get("name", "")
