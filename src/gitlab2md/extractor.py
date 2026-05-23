@@ -19,6 +19,7 @@ class GitLabExtractor:
 
     def __init__(self, groups: list[str] | None = None) -> None:
         self._groups = groups or []
+        self._profile_cache: dict[str, list[dict[str, Any]]] = {}
         # Validate group names at initialization
         for group in self._groups:
             validate_gitlab_name(group, "group")
@@ -116,11 +117,11 @@ class GitLabExtractor:
         # Starred projects
         data["starred_projects"] = self._get_starred_projects(username)
 
-        # User snippets (requires authentication as that user)
-        data["snippets"] = self._get_snippets()
+        # User snippets
+        data["snippets"] = self._get_snippets(username)
 
-        # SSH keys (requires authentication)
-        data["ssh_keys"] = self._get_ssh_keys()
+        # SSH keys
+        data["ssh_keys"] = self._get_ssh_keys(username)
 
         # GPG keys
         data["gpg_keys"] = self._get_gpg_keys(username)
@@ -138,8 +139,12 @@ class GitLabExtractor:
         return data
 
     def _get_profile(self, username: str) -> list[dict[str, Any]]:
-        """Get user profile information."""
-        return self._safe_extract_list("api", f"/users?username={username}")
+        """Get user profile information (cached)."""
+        if username not in self._profile_cache:
+            self._profile_cache[username] = self._safe_extract_list(
+                "api", f"/users?username={username}"
+            )
+        return self._profile_cache[username]
 
     def _get_projects(self, username: str) -> list[dict[str, Any]]:
         """Get user's owned projects."""
@@ -179,18 +184,39 @@ class GitLabExtractor:
             "api", f"/users/{username}/starred_projects?per_page={DEFAULT_PAGE_SIZE}"
         )
 
-    def _get_snippets(self) -> list[dict[str, Any]]:
-        """Get current user's snippets."""
-        return self._safe_extract_list("api", f"/snippets?per_page={DEFAULT_PAGE_SIZE}")
+    def _get_snippets(self, username: str) -> list[dict[str, Any]]:
+        """Get user's snippets."""
+        try:
+            profile = self._safe_extract_list("api", f"/users?username={username}")
+            if profile:
+                user_id = profile[0].get("id")
+                if user_id:
+                    return self._safe_extract_list(
+                        "api",
+                        f"/users/{user_id}/snippets?per_page={DEFAULT_PAGE_SIZE}",
+                    )
+            return []
+        except Exception:
+            return []
 
-    def _get_ssh_keys(self) -> list[dict[str, Any]]:
-        """Get current user's SSH keys."""
-        return self._safe_extract_list("api", "/user/keys")
+    def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
+        """Get user's SSH keys."""
+        try:
+            profile = self._safe_extract_list("api", f"/users?username={username}")
+            if profile:
+                user_id = profile[0].get("id")
+                if user_id:
+                    return self._safe_extract_list(
+                        "api", f"/users/{user_id}/keys"
+                    )
+            return []
+        except Exception:
+            return []
 
     def _get_gpg_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's GPG keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -202,7 +228,7 @@ class GitLabExtractor:
     def _get_memberships(self, username: str) -> list[dict[str, Any]]:
         """Get user's group and project memberships."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
