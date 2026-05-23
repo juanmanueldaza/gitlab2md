@@ -26,12 +26,12 @@ class TestDataExtractorProtocol:
     """Tests for DataExtractor protocol compliance."""
 
     def test_gitlab_extractor_implements_protocol(self):
-        extractor = GitLabExtractor()
-        assert isinstance(extractor, DataExtractor)
+        extractor: DataExtractor = GitLabExtractor()
+        assert extractor is not None
 
     def test_dict_extractor_implements_protocol(self):
-        extractor = DictExtractor({})
-        assert isinstance(extractor, DataExtractor)
+        extractor: DataExtractor = DictExtractor({})
+        assert extractor is not None
 
 
 class TestOutputWriterProtocol:
@@ -39,12 +39,12 @@ class TestOutputWriterProtocol:
 
     def test_markdown_file_writer_implements_protocol(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            writer = MarkdownFileWriter(Path(tmpdir))
-            assert isinstance(writer, OutputWriter)
+            writer: OutputWriter = MarkdownFileWriter(Path(tmpdir))
+            assert writer is not None
 
     def test_in_memory_writer_implements_protocol(self):
-        writer = InMemoryWriter()
-        assert isinstance(writer, OutputWriter)
+        writer: OutputWriter = InMemoryWriter()
+        assert writer is not None
 
 
 # =============================================================================

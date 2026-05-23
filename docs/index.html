@@ -32,6 +32,7 @@
 
         
         <link rel="canonical" href="https://gitlab2md.daza.ar/" />
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦊</text></svg>" />
         <meta name="author" content="Juan Manuel Daza" />
         <meta name="theme-color" content="#0a0a0a" />
 
@@ -350,7 +351,29 @@
     
         <!-- Structured Data -->
         <script type="application/ld+json">
-        {"@context":"https://schema.org","@type":"SoftwareApplication","name":"gitlab2md","description":"Convert your GitLab data to clean Markdown files for AI analysis.","url":"https://gitlab2md.daza.ar","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Juan Manuel Daza","url":"https://daza.ar"},"license":"https://opensource.org/licenses/GPL-2.0","downloadUrl":"https://pypi.org/project/gitlab2md/","softwareVersion":"0.1.0","codeRepository":"https://github.com/juanmanueldaza/gitlab2md"}
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "gitlab2md",
+          "description": "Convert your GitLab data to clean Markdown files for AI analysis.",
+          "url": "https://gitlab2md.daza.ar",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Cross-platform",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@type": "Person",
+            "name": "Juan Manuel Daza",
+            "url": "https://daza.ar"
+          },
+          "license": "https://opensource.org/licenses/GPL-2.0",
+          "downloadUrl": "https://pypi.org/project/gitlab2md/",
+          "softwareVersion": "0.1.0",
+          "codeRepository": "https://github.com/juanmanueldaza/gitlab2md"
+        }
         </script>
 
     </head>
@@ -522,12 +545,9 @@
                     style="max-width: 100%; text-align: left"
                 >
                     <code>
-                        <span class="prompt">$</span> pipx install
-                        gitlab2md<br />
-                        <span class="prompt">$</span> gitlab2md
-                        your_export.zip<br />
-                        <span class="prompt">$</span> gitlab2md export.zip -o
-                        ./my-profile
+                        <span class="prompt">$</span> pipx install gitlab2md<br />
+                        <span class="prompt">$</span> gitlab2md your_username<br />
+                        <span class="prompt">$</span> gitlab2md your_username -o ./my-profile
                     </code>
                 </div>
             </section>
