@@ -6,10 +6,9 @@ All implementations depend on these abstractions, not concrete classes
 """
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol
 
 
-@runtime_checkable
 class DataExtractor(Protocol):
     """Protocol for extracting raw data from GitLab API.
 
@@ -30,7 +29,6 @@ class DataExtractor(Protocol):
         ...
 
 
-@runtime_checkable
 class SectionParser(Protocol):
     """Protocol for parsing one section of raw GitLab data.
 
@@ -56,7 +54,6 @@ class SectionParser(Protocol):
         ...
 
 
-@runtime_checkable
 class SectionFormatter(Protocol):
     """Protocol for formatting parsed data into Markdown.
 
@@ -87,7 +84,6 @@ class SectionFormatter(Protocol):
         ...
 
 
-@runtime_checkable
 class OutputWriter(Protocol):
     """Protocol for writing content to output destination.
 
@@ -112,7 +108,6 @@ class OutputWriter(Protocol):
         ...
 
 
-@runtime_checkable
 class ParserRegistry(Protocol):
     """Protocol for parser registry."""
 
@@ -125,7 +120,6 @@ class ParserRegistry(Protocol):
         ...
 
 
-@runtime_checkable
 class FormatterRegistry(Protocol):
     """Protocol for formatter registry."""
 
