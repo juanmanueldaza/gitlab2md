@@ -202,6 +202,26 @@ class TestFormatterSecurity:
         result = formatter._escape_md("text | with | pipes")
         assert result == "text \\| with \\| pipes"
 
+    def test_escape_md_prevents_formatting_injection(self, formatter):
+        """Ensure markdown formatting characters are escaped."""
+        result = formatter._escape_md("*bold* _italic_ `code`")
+        assert result == "\\*bold\\* \\_italic\\_ \\`code\\`"
+
+    def test_escape_md_handles_backslash_first(self, formatter):
+        """Ensure backslash is escaped first to prevent double-escaping."""
+        result = formatter._escape_md("\\*")
+        assert result == "\\\\\\*"
+
+    def test_escape_md_preserves_version_numbers(self, formatter):
+        """Ensure dots in version numbers are preserved."""
+        result = formatter._escape_md("v1.2.3")
+        assert result == "v1.2.3"
+
+    def test_escape_md_preserves_parentheses(self, formatter):
+        """Ensure parentheses in text are preserved."""
+        result = formatter._escape_md("function()")
+        assert result == "function()"
+
     def test_truncate_prevents_large_output(self, formatter):
         """Ensure truncate limits output size."""
         large_text = "A" * 100000
