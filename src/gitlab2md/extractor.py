@@ -116,11 +116,11 @@ class GitLabExtractor:
         # Starred projects
         data["starred_projects"] = self._get_starred_projects(username)
 
-        # User snippets (requires authentication as that user)
-        data["snippets"] = self._get_snippets()
+        # User snippets
+        data["snippets"] = self._get_snippets(username)
 
-        # SSH keys (requires authentication)
-        data["ssh_keys"] = self._get_ssh_keys()
+        # SSH keys
+        data["ssh_keys"] = self._get_ssh_keys(username)
 
         # GPG keys
         data["gpg_keys"] = self._get_gpg_keys(username)
@@ -179,13 +179,34 @@ class GitLabExtractor:
             "api", f"/users/{username}/starred_projects?per_page={DEFAULT_PAGE_SIZE}"
         )
 
-    def _get_snippets(self) -> list[dict[str, Any]]:
-        """Get current user's snippets."""
-        return self._safe_extract_list("api", f"/snippets?per_page={DEFAULT_PAGE_SIZE}")
+    def _get_snippets(self, username: str) -> list[dict[str, Any]]:
+        """Get user's snippets."""
+        try:
+            profile = self._safe_extract_list("api", f"/users?username={username}")
+            if profile:
+                user_id = profile[0].get("id")
+                if user_id:
+                    return self._safe_extract_list(
+                        "api",
+                        f"/users/{user_id}/snippets?per_page={DEFAULT_PAGE_SIZE}",
+                    )
+            return []
+        except Exception:
+            return []
 
-    def _get_ssh_keys(self) -> list[dict[str, Any]]:
-        """Get current user's SSH keys."""
-        return self._safe_extract_list("api", "/user/keys")
+    def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
+        """Get user's SSH keys."""
+        try:
+            profile = self._safe_extract_list("api", f"/users?username={username}")
+            if profile:
+                user_id = profile[0].get("id")
+                if user_id:
+                    return self._safe_extract_list(
+                        "api", f"/users/{user_id}/keys"
+                    )
+            return []
+        except Exception:
+            return []
 
     def _get_gpg_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's GPG keys."""
