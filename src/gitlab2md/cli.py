@@ -1,6 +1,7 @@
 """Command-line interface for gitlab2md."""
 
 import argparse
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -56,40 +57,48 @@ def main() -> None:
         action="version",
         version=f"%(prog)s {__version__}",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose (debug) logging",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress informational output",
+    )
 
     args = parser.parse_args()
+
+    log_level = logging.INFO
+    if args.verbose:
+        log_level = logging.DEBUG
+    elif args.quiet:
+        log_level = logging.WARNING
+    logging.basicConfig(level=log_level, format="%(message)s")
 
     # Determine username
     username = args.username
     if not username:
         username = get_authenticated_user()
         if not username:
-            print(
-                "Error: No username provided and not authenticated with glab CLI.",
-                file=sys.stderr,
-            )
-            print(
-                "Either provide a username or run 'glab auth login' first.",
-                file=sys.stderr,
-            )
+            logging.error("No username provided and not authenticated with glab CLI.")
+            logging.error("Either provide a username or run 'glab auth login' first.")
             sys.exit(1)
-        print(f"Using authenticated user: {username}")
+        logging.info("Using authenticated user: %s", username)
 
     # Validate username using shared validation
     try:
         validate_gitlab_name(username, "username")
     except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logging.error("Error: %s", e)
         sys.exit(1)
 
     # Check glab CLI is available
     try:
         subprocess.run(["glab", "--version"], capture_output=True, check=True)
     except FileNotFoundError:
-        print(
-            "Error: glab CLI not found. Install from https://gitlab.com/gitlab-org/cli",
-            file=sys.stderr,
-        )
+        logging.error("glab CLI not found. Install from https://gitlab.com/gitlab-org/cli")
         sys.exit(1)
 
     # Parse and validate groups using shared validation
@@ -100,32 +109,29 @@ def main() -> None:
             for group in groups:
                 validate_gitlab_name(group, "group")
         except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
+            logging.error("Error: %s", e)
             sys.exit(1)
 
     # Run conversion
     try:
         converter = create_converter(args.output, groups=groups)
-        print(f"Fetching GitLab data for: {username}")
+        logging.info("Fetching GitLab data for: %s", username)
         if groups:
-            print(f"Including group contributions: {', '.join(groups)}")
+            logging.info("Including group contributions: %s", ", ".join(groups))
         files = converter.convert(username)
 
-        print(f"\nCreated {len(files)} files in {args.output}/")
+        logging.info("\nCreated %d files in %s/", len(files), args.output)
         for f in files:
-            print(f"  - {f.name}")
+            logging.info("  - %s", f.name)
 
     except ValueError as e:
-        # Validation errors
-        print(f"Error: {e}", file=sys.stderr)
+        logging.error("Error: %s", e)
         sys.exit(1)
     except RuntimeError as e:
-        # API/CLI errors (already sanitized)
-        print(f"Error: {e}", file=sys.stderr)
+        logging.error("Error: %s", e)
         sys.exit(1)
     except Exception:
-        # Unexpected errors - don't expose details
-        print("Error: An unexpected error occurred.", file=sys.stderr)
+        logging.error("Error: An unexpected error occurred.")
         sys.exit(1)
 
 
