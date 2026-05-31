@@ -13,9 +13,9 @@
                 'analytics_storage': 'denied'
             });
             gtag('js', new Date());
-            gtag('config', 'G-PV6HF4TEQ7');
+            gtag('config', 'G-D2DMNZMZQH');
         </script>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-PV6HF4TEQ7"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2DMNZMZQH"></script>
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>
@@ -376,7 +376,8 @@
         }
         </script>
 
-    </head>
+        <script src="/_shared/analytics-config.umd.js"></script>
+</head>
     <body>
         <div class="container">
             <header>
@@ -591,5 +592,13 @@
             const ConsentManager={STORAGE_KEY:'cookie_consent',init(){const c=this.getConsent();if(c===null)this.showBanner();else this.applyConsent(c);this.bindEvents();},getConsent(){const s=localStorage.getItem(this.STORAGE_KEY);return s===null?null:s==='granted';},setConsent(g){localStorage.setItem(this.STORAGE_KEY,g?'granted':'denied');this.applyConsent(g);this.hideBanner();},applyConsent(g){const s=g?'granted':'denied';if(typeof gtag!=='undefined')gtag('consent','update',{'ad_storage':s,'ad_user_data':s,'ad_personalization':s,'analytics_storage':s});},showBanner(){document.getElementById('cookie-banner').hidden=false;},hideBanner(){document.getElementById('cookie-banner').hidden=true;},bindEvents(){document.getElementById('cookie-accept')?.addEventListener('click',()=>this.setConsent(true));document.getElementById('cookie-reject')?.addEventListener('click',()=>this.setConsent(false));document.getElementById('cookie-settings')?.addEventListener('click',()=>this.showBanner());}};document.addEventListener('DOMContentLoaded',()=>ConsentManager.init());
         </script>
 
-    </body>
+    
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        DazaAnalytics.bootstrap('gitlab2md');
+        DazaAnalytics.initAutoTrackers();
+        DazaAnalytics.ConsentManager.init();
+      });
+    </script>
+</body>
 </html>
