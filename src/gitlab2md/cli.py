@@ -98,7 +98,9 @@ def main() -> None:
     try:
         subprocess.run(["glab", "--version"], capture_output=True, check=True)
     except FileNotFoundError:
-        logging.error("glab CLI not found. Install from https://gitlab.com/gitlab-org/cli")
+        logging.error(
+            "glab CLI not found. Install from https://gitlab.com/gitlab-org/cli"
+        )
         sys.exit(1)
 
     # Parse and validate groups using shared validation
