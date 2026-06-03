@@ -201,9 +201,7 @@ class GitLabExtractor:
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
-                    return self._safe_extract_list(
-                        "api", f"/users/{user_id}/keys"
-                    )
+                    return self._safe_extract_list("api", f"/users/{user_id}/keys")
             return []
         except Exception:
             return []
