@@ -1,5 +1,6 @@
 """Tests for CLI module."""
 
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -43,6 +44,7 @@ class TestMain:
 
     def test_glab_not_found(self, capsys):
         """Test error when glab CLI is not found."""
+        logging.getLogger().handlers.clear()
         with patch("sys.argv", ["gitlab2md", "testuser"]):
             with patch("subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError()
@@ -55,6 +57,7 @@ class TestMain:
 
     def test_no_username_and_not_authenticated(self, capsys):
         """Test error when no username provided and not authenticated."""
+        logging.getLogger().handlers.clear()
         with patch("sys.argv", ["gitlab2md"]):
             with patch("gitlab2md.cli.get_authenticated_user", return_value=None):
                 with pytest.raises(SystemExit) as exc_info:
@@ -66,6 +69,7 @@ class TestMain:
 
     def test_successful_conversion(self, capsys, tmp_path):
         """Test successful conversion with mock extractor."""
+        logging.getLogger().handlers.clear()
         output_dir = tmp_path / "output"
 
         with patch("sys.argv", ["gitlab2md", "testuser", "-o", str(output_dir)]):
@@ -85,10 +89,11 @@ class TestMain:
                     main()
 
         captured = capsys.readouterr()
-        assert "Created 2 files" in captured.out
+        assert "Created 2 files" in captured.err
 
     def test_uses_authenticated_user_when_no_username(self, capsys, tmp_path):
         """Test that authenticated user is used when no username provided."""
+        logging.getLogger().handlers.clear()
         output_dir = tmp_path / "output"
 
         with patch("sys.argv", ["gitlab2md", "-o", str(output_dir)]):
@@ -104,10 +109,11 @@ class TestMain:
                         main()
 
         captured = capsys.readouterr()
-        assert "authuser" in captured.out
+        assert "authuser" in captured.err
 
     def test_groups_option(self, capsys, tmp_path):
         """Test --groups option is parsed correctly."""
+        logging.getLogger().handlers.clear()
         output_dir = tmp_path / "output"
 
         with patch(
@@ -136,10 +142,11 @@ class TestMain:
                     assert call_args[1]["groups"] == ["group1", "group2"]
 
         captured = capsys.readouterr()
-        assert "group1" in captured.out or "group2" in captured.out
+        assert "group1" in captured.err or "group2" in captured.err
 
     def test_conversion_error(self, capsys, tmp_path):
         """Test handling of conversion errors."""
+        logging.getLogger().handlers.clear()
         output_dir = tmp_path / "output"
 
         with patch("sys.argv", ["gitlab2md", "testuser", "-o", str(output_dir)]):
@@ -164,6 +171,7 @@ class TestArgumentParsing:
 
     def test_default_output_directory(self, capsys, tmp_path):
         """Test default output directory is 'gitlab_export'."""
+        logging.getLogger().handlers.clear()
         with patch("sys.argv", ["gitlab2md", "testuser"]):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0)
@@ -180,6 +188,7 @@ class TestArgumentParsing:
 
     def test_custom_output_directory(self, capsys, tmp_path):
         """Test custom output directory is used."""
+        logging.getLogger().handlers.clear()
         custom_output = tmp_path / "custom_output"
 
         with patch("sys.argv", ["gitlab2md", "testuser", "-o", str(custom_output)]):
