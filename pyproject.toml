@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Convert GitLab profile data to Markdown for LLM analysis"
 readme = "README.md"
 license = { text = "GPL-2.0" }
-authors = [{ name = "Juan Manuel Daza", email = "juanmanueldaza@gmail.com" }]
+authors = [{ name = "Juan Manuel Daza", email = "juan@daza.ar" }]
 requires-python = ">=3.13"
 keywords = ["gitlab", "markdown", "export", "profile", "llm", "ai", "developer"]
 classifiers = [
