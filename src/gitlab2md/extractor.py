@@ -1,6 +1,7 @@
 """GitLab data extraction via glab CLI."""
 
 import json
+import logging
 import subprocess
 from typing import Any
 
@@ -19,6 +20,7 @@ class GitLabExtractor:
 
     def __init__(self, groups: list[str] | None = None) -> None:
         self._groups = groups or []
+        self._profile_cache: dict[str, list[dict[str, Any]]] = {}
         # Validate group names at initialization
         for group in self._groups:
             validate_gitlab_name(group, "group")
@@ -65,7 +67,8 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, list) else []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to extract list data: %s", e)
             return []
 
     def _safe_extract_dict(self, *args: str) -> dict[str, Any]:
@@ -76,7 +79,8 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, dict) else {}
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to extract dict data: %s", e)
             return {}
 
     def extract(self, username: str) -> dict[str, Any]:
@@ -138,8 +142,12 @@ class GitLabExtractor:
         return data
 
     def _get_profile(self, username: str) -> list[dict[str, Any]]:
-        """Get user profile information."""
-        return self._safe_extract_list("api", f"/users?username={username}")
+        """Get user profile information with caching."""
+        if username not in self._profile_cache:
+            self._profile_cache[username] = self._safe_extract_list(
+                "api", f"/users?username={username}"
+            )
+        return self._profile_cache[username]
 
     def _get_projects(self, username: str) -> list[dict[str, Any]]:
         """Get user's owned projects."""
@@ -182,7 +190,7 @@ class GitLabExtractor:
     def _get_snippets(self, username: str) -> list[dict[str, Any]]:
         """Get user's snippets."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -191,37 +199,40 @@ class GitLabExtractor:
                         f"/users/{user_id}/snippets?per_page={DEFAULT_PAGE_SIZE}",
                     )
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to get snippets for '%s': %s", username, e)
             return []
 
     def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's SSH keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
                     return self._safe_extract_list("api", f"/users/{user_id}/keys")
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to get SSH keys for '%s': %s", username, e)
             return []
 
     def _get_gpg_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's GPG keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
                     return self._safe_extract_list("api", f"/users/{user_id}/gpg_keys")
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to get GPG keys for '%s': %s", username, e)
             return []
 
     def _get_memberships(self, username: str) -> list[dict[str, Any]]:
         """Get user's group and project memberships."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._get_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -229,7 +240,8 @@ class GitLabExtractor:
                         "api", f"/users/{user_id}/memberships"
                     )
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to get memberships for '%s': %s", username, e)
             return []
 
     def _get_contributed_projects(self, username: str) -> list[dict[str, Any]]:
@@ -244,7 +256,7 @@ class GitLabExtractor:
         contributions: dict[str, Any] = {}
 
         # Get user's full name for commit matching
-        profile = self._safe_extract_list("api", f"/users?username={username}")
+        profile = self._get_profile(username)
         user_name = ""
         if profile:
             user_name = profile[0].get("name", "")
@@ -294,8 +306,10 @@ class GitLabExtractor:
                 if group_data["projects"]:
                     contributions[group] = group_data
 
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning(
+                    "Failed to get group contributions for '%s': %s", group, e
+                )
 
         return contributions
 

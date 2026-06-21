@@ -1,10 +1,13 @@
 """Security-focused tests for gitlab2md."""
 
+import logging
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from gitlab2md.extractor import GitLabExtractor
 from gitlab2md.formatters.base import BaseFormatter
 from gitlab2md.writer import InMemoryWriter, MarkdownFileWriter
 
@@ -266,6 +269,54 @@ class TestFormatterSecurity:
         result = formatter._escape_md("line1\nline2\rline3")
         assert "\n" not in result
         assert "\r" not in result
+
+
+# =============================================================================
+# Extractor Security Tests
+# =============================================================================
+
+
+class TestExtractorSecurity:
+    """Tests for extractor error handling security."""
+
+    def test_safe_extract_list_logs_warning_on_error(self, caplog):
+        """Safe extract should log warning without exposing internals."""
+        caplog.set_level(logging.WARNING)
+        extractor = GitLabExtractor()
+
+        with patch.object(extractor, "_run_glab_json") as mock_run:
+            mock_run.side_effect = RuntimeError("API connection failed")
+
+            result = extractor._safe_extract_list("api", "/test")
+
+            assert result == []
+            assert "Failed to extract list data" in caplog.text
+
+    def test_safe_extract_dict_logs_warning_on_error(self, caplog):
+        """Safe dict extract should log warning without exposing internals."""
+        caplog.set_level(logging.WARNING)
+        extractor = GitLabExtractor()
+
+        with patch.object(extractor, "_run_glab_json") as mock_run:
+            mock_run.side_effect = ValueError("Invalid JSON")
+
+            result = extractor._safe_extract_dict("api", "/test")
+
+            assert result == {}
+            assert "Failed to extract dict data" in caplog.text
+
+    def test_profile_caching_reduces_api_calls(self):
+        """Profile data should be fetched only once per username."""
+        extractor = GitLabExtractor()
+
+        with patch.object(extractor, "_safe_extract_list") as mock_extract:
+            mock_extract.return_value = [{"id": 1}]
+
+            first = extractor._get_profile("testuser")
+            second = extractor._get_profile("testuser")
+
+            assert first == second
+            assert mock_extract.call_count == 1
 
 
 # =============================================================================
