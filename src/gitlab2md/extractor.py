@@ -1,6 +1,7 @@
 """GitLab data extraction via glab CLI."""
 
 import json
+import logging
 import subprocess
 from typing import Any
 
@@ -65,7 +66,8 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, list) else []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to extract list from '%s': %s", " ".join(args), e)
             return []
 
     def _safe_extract_dict(self, *args: str) -> dict[str, Any]:
@@ -76,7 +78,8 @@ class GitLabExtractor:
         try:
             result = self._run_glab_json(*args)
             return result if isinstance(result, dict) else {}
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to extract dict from '%s': %s", " ".join(args), e)
             return {}
 
     def extract(self, username: str) -> dict[str, Any]:
@@ -191,7 +194,8 @@ class GitLabExtractor:
                         f"/users/{user_id}/snippets?per_page={DEFAULT_PAGE_SIZE}",
                     )
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to fetch snippets for '%s': %s", username, e)
             return []
 
     def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
@@ -203,7 +207,8 @@ class GitLabExtractor:
                 if user_id:
                     return self._safe_extract_list("api", f"/users/{user_id}/keys")
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to fetch SSH keys for '%s': %s", username, e)
             return []
 
     def _get_gpg_keys(self, username: str) -> list[dict[str, Any]]:
@@ -215,7 +220,8 @@ class GitLabExtractor:
                 if user_id:
                     return self._safe_extract_list("api", f"/users/{user_id}/gpg_keys")
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to fetch GPG keys for '%s': %s", username, e)
             return []
 
     def _get_memberships(self, username: str) -> list[dict[str, Any]]:
@@ -229,7 +235,8 @@ class GitLabExtractor:
                         "api", f"/users/{user_id}/memberships"
                     )
             return []
-        except Exception:
+        except Exception as e:
+            logging.warning("Failed to fetch memberships for '%s': %s", username, e)
             return []
 
     def _get_contributed_projects(self, username: str) -> list[dict[str, Any]]:
@@ -294,8 +301,10 @@ class GitLabExtractor:
                 if group_data["projects"]:
                     contributions[group] = group_data
 
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning(
+                    "Failed to fetch contributions for group '%s': %s", group, e
+                )
 
         return contributions
 
