@@ -20,9 +20,27 @@ class GitLabExtractor:
 
     def __init__(self, groups: list[str] | None = None) -> None:
         self._groups = groups or []
+        # Cache for the user profile lookup, which several getters need to
+        # resolve the numeric user id. Avoids re-hitting /users?username=
+        # once per dependent call (snippets, keys, memberships, ...).
+        self._profile_cache: dict[str, list[dict[str, Any]]] = {}
         # Validate group names at initialization
         for group in self._groups:
             validate_gitlab_name(group, "group")
+
+    def _cached_profile(self, username: str) -> list[dict[str, Any]]:
+        """Return the raw profile lookup for a user, caching the result.
+
+        The GitLab ``/users?username=`` response is required by several
+        getters to obtain the numeric user id. Caching it per username
+        collapses what was previously one API call per dependent getter
+        into a single request.
+        """
+        if username not in self._profile_cache:
+            self._profile_cache[username] = self._safe_extract_list(
+                "api", f"/users?username={username}"
+            )
+        return self._profile_cache[username]
 
     def _run_glab(self, *args: str) -> str:
         """Run glab CLI command and return output.
@@ -142,7 +160,7 @@ class GitLabExtractor:
 
     def _get_profile(self, username: str) -> list[dict[str, Any]]:
         """Get user profile information."""
-        return self._safe_extract_list("api", f"/users?username={username}")
+        return self._cached_profile(username)
 
     def _get_projects(self, username: str) -> list[dict[str, Any]]:
         """Get user's owned projects."""
@@ -185,7 +203,7 @@ class GitLabExtractor:
     def _get_snippets(self, username: str) -> list[dict[str, Any]]:
         """Get user's snippets."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._cached_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -201,7 +219,7 @@ class GitLabExtractor:
     def _get_ssh_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's SSH keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._cached_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -214,7 +232,7 @@ class GitLabExtractor:
     def _get_gpg_keys(self, username: str) -> list[dict[str, Any]]:
         """Get user's GPG keys."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._cached_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -227,7 +245,7 @@ class GitLabExtractor:
     def _get_memberships(self, username: str) -> list[dict[str, Any]]:
         """Get user's group and project memberships."""
         try:
-            profile = self._safe_extract_list("api", f"/users?username={username}")
+            profile = self._cached_profile(username)
             if profile:
                 user_id = profile[0].get("id")
                 if user_id:
@@ -251,7 +269,7 @@ class GitLabExtractor:
         contributions: dict[str, Any] = {}
 
         # Get user's full name for commit matching
-        profile = self._safe_extract_list("api", f"/users?username={username}")
+        profile = self._cached_profile(username)
         user_name = ""
         if profile:
             user_name = profile[0].get("name", "")
