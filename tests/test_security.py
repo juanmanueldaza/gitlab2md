@@ -1,11 +1,14 @@
 """Security-focused tests for gitlab2md."""
 
+import subprocess
 import tempfile
 from pathlib import Path
 
 import pytest
 
+from gitlab2md.extractor import GitLabExtractor
 from gitlab2md.formatters.base import BaseFormatter
+from gitlab2md.validation import validate_gitlab_name
 from gitlab2md.writer import InMemoryWriter, MarkdownFileWriter
 
 # =============================================================================
@@ -334,3 +337,138 @@ class TestDataIntegrity:
             path = writer.write("test.md", "updated")
 
             assert path.read_text() == "updated"
+
+
+# =============================================================================
+# Authentication Edge Case Tests
+# =============================================================================
+
+
+def _fake_completed(returncode: int, stdout: str = "", stderr: str = ""):
+    """Build a CompletedProcess stand-in for subprocess.run."""
+    return subprocess.CompletedProcess(
+        args=["glab"], returncode=returncode, stdout=stdout, stderr=stderr
+    )
+
+
+class TestAuthErrorHandling:
+    """Tests that glab failures map to safe messages without leaking internals.
+
+    The extractor must never surface raw stderr (which can contain tokens,
+    URLs, or host details) to the user.
+    """
+
+    @pytest.mark.parametrize(
+        ("stderr", "expected"),
+        [
+            ("API rate limit exceeded for token", "rate limit"),
+            ("404 Project Not Found", "not found"),
+            ("error: resource not found", "not found"),
+            ("401 Unauthorized", "Authentication failed"),
+            ("403 Forbidden", "Authentication failed"),
+            ("unauthorized: token revoked", "Authentication failed"),
+        ],
+    )
+    def test_auth_errors_map_to_safe_messages(self, monkeypatch, stderr, expected):
+        """Known failure classes map to a safe, user-facing message."""
+        extractor = GitLabExtractor()
+
+        monkeypatch.setattr(
+            subprocess, "run", lambda *a, **k: _fake_completed(1, stderr=stderr)
+        )
+
+        with pytest.raises(RuntimeError, match=expected):
+            extractor._run_glab("api", "/users?username=test")
+
+    def test_generic_failure_does_not_leak_stderr(self, monkeypatch):
+        """An unrecognized failure must not echo raw stderr to the user."""
+        secret_stderr = "fatal: token=glpat-SECRET123 host=internal.example.com"
+        extractor = GitLabExtractor()
+
+        monkeypatch.setattr(
+            subprocess, "run", lambda *a, **k: _fake_completed(1, stderr=secret_stderr)
+        )
+
+        with pytest.raises(RuntimeError) as exc_info:
+            extractor._run_glab("api", "/users?username=test")
+
+        message = str(exc_info.value)
+        assert "glpat-SECRET123" not in message
+        assert "internal.example.com" not in message
+
+    def test_successful_call_returns_stdout(self, monkeypatch):
+        """A zero-exit call returns stdout unchanged."""
+        extractor = GitLabExtractor()
+
+        monkeypatch.setattr(
+            subprocess,
+            "run",
+            lambda *a, **k: _fake_completed(0, stdout='{"ok": true}'),
+        )
+
+        assert extractor._run_glab("api", "/version") == '{"ok": true}'
+
+
+# =============================================================================
+# Input Validation / Command Injection Tests
+# =============================================================================
+
+
+class TestNameValidationSecurity:
+    """Tests that usernames/group names flowing into API paths are validated.
+
+    A username is interpolated into glab API request paths, so injection
+    characters must be rejected before reaching the CLI.
+    """
+
+    @pytest.mark.parametrize(
+        "malicious",
+        [
+            "user; rm -rf /",
+            "user && whoami",
+            "user | cat /etc/passwd",
+            "$(whoami)",
+            "`id`",
+            "user name",  # space
+            "../../etc/passwd",
+            "../sibling",
+            "user/../../root",
+            "user\x00null",
+            "-flag",  # leading hyphen could be parsed as an option
+            "user@host",
+            "user?q=1",
+            "user#frag",
+        ],
+    )
+    def test_rejects_injection_in_username(self, malicious):
+        """Injection / traversal attempts in a username are rejected."""
+        with pytest.raises(ValueError):
+            validate_gitlab_name(malicious, "username")
+
+    @pytest.mark.parametrize(
+        "malicious",
+        ["group; ls", "group/../secret", "$(id)", "group name"],
+    )
+    def test_rejects_injection_in_group(self, malicious):
+        """Injection attempts in a group name are rejected."""
+        with pytest.raises(ValueError):
+            validate_gitlab_name(malicious, "group")
+
+    @pytest.mark.parametrize(
+        "valid",
+        ["alice", "bob-smith", "user_name", "a.b.c", "user123", "x"],
+    )
+    def test_accepts_valid_names(self, valid):
+        """Legitimate GitLab names are accepted."""
+        validate_gitlab_name(valid, "username")
+
+    def test_extractor_rejects_malicious_group_at_init(self):
+        """GitLabExtractor validates group names at construction time."""
+        with pytest.raises(ValueError):
+            GitLabExtractor(groups=["evil; rm -rf /"])
+
+    def test_extract_rejects_malicious_username(self):
+        """extract() validates the username before any API call."""
+        extractor = GitLabExtractor()
+        with pytest.raises(ValueError):
+            extractor.extract("user; rm -rf /")
