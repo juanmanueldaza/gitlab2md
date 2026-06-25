@@ -141,8 +141,12 @@ class GitLabExtractor:
         return data
 
     def _get_profile(self, username: str) -> list[dict[str, Any]]:
-        """Get user profile information."""
-        return self._safe_extract_list("api", f"/users?username={username}")
+        """Get user profile information (cached per username)."""
+        if username in self._profile_cache:
+            return self._profile_cache[username]
+        data = self._safe_extract_list("api", f"/users?username={username}")
+        self._profile_cache[username] = data
+        return data
 
     def _get_projects(self, username: str) -> list[dict[str, Any]]:
         """Get user's owned projects."""
