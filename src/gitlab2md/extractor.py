@@ -20,6 +20,7 @@ class GitLabExtractor:
 
     def __init__(self, groups: list[str] | None = None) -> None:
         self._groups = groups or []
+        self._profile_cache: dict[str, list[dict[str, Any]]] = {}
         # Validate group names at initialization
         for group in self._groups:
             validate_gitlab_name(group, "group")
