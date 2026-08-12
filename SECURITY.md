@@ -14,7 +14,7 @@ security vulnerability, please report it to us as described below.
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, report them via email to **juan@daza.ar**.
+Instead, report them via email to **juanmanueldaza@gmail.com**.
 
 You should receive a response within 48 hours. If you do not, please follow up
 to ensure we received your report.
