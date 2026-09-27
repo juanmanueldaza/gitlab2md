@@ -81,12 +81,12 @@ New parsers and formatters register via decorators:
 from gitlab2md.registry import register_parser
 from gitlab2md.parsers.base import BaseParser
 
+
 @register_parser
 class MyNewParser(BaseParser):
     section_key = "my_section"
 
-    def parse(self, raw_data):
-        ...
+    def parse(self, raw_data): ...
 ```
 
 The `parsers/__init__.py` and `formatters/__init__.py` must import all classes so the decorators fire during import.

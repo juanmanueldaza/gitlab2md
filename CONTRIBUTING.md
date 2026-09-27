@@ -59,6 +59,7 @@ Example:
 from gitlab2md.parsers.base import BaseParser
 from gitlab2md.registry import register_parser
 
+
 @register_parser
 class MyNewParser(BaseParser):
     section_key = "my_section"
